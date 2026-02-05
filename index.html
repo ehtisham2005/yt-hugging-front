@@ -4,8 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>YouTube Comment Summarizer</title>
+  
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Montserrat:wght@600;800&display=swap');
@@ -19,7 +21,7 @@
       position: relative;
     }
 
-    /* ========= BACKGROUND ========= */
+    /* ========= BACKGROUND EFFECTS ========= */
     .ai-bg {
       position: fixed;
       inset: 0;
@@ -44,7 +46,6 @@
       to { transform: translateY(-60px); }
     }
 
-    /* Moving glow line background */
     .glow-line {
       position: absolute;
       left: 0;
@@ -61,81 +62,63 @@
       100% { top: -25%; opacity: 0; }
     }
 
-    /* ========= HEADER ========= */
+    /* ========= AI CONTENT STYLING (The fix for Markdown) ========= */
+    .prose-ai {
+      line-height: 1.7;
+      color: #d1d1d1;
+    }
+    .prose-ai h2 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #ff3366;
+      margin-top: 1.5rem;
+      margin-bottom: 0.75rem;
+      border-bottom: 1px solid #333;
+      font-family: 'Montserrat', sans-serif;
+    }
+    .prose-ai h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #ffffff;
+      margin-top: 1rem;
+    }
+    .prose-ai ul {
+      list-style-type: disc;
+      padding-left: 1.5rem;
+      margin: 1rem 0;
+    }
+    .prose-ai li {
+      margin-bottom: 0.5rem;
+    }
+    .prose-ai strong {
+      color: #ff4d4d;
+      font-weight: 600;
+    }
+
+    /* ========= UI COMPONENTS ========= */
     header {
       position: relative;
-      overflow: hidden;
       background: linear-gradient(90deg, #ff0000 0%, #ff3366 100%);
       color: #fff;
       text-align: center;
       padding: 3.5rem 1rem;
       text-transform: uppercase;
       font-family: 'Montserrat', sans-serif;
-      letter-spacing: 1px;
       border-bottom: 3px solid #ff4d4d;
       box-shadow: 0 4px 20px rgba(255, 0, 0, 0.3);
     }
 
-    header .corner-design {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      inset: 0;
-      z-index: 0;
-      pointer-events: none;
-    }
-
-    .pipe {
-      position: absolute;
-      background: rgba(255, 255, 255, 0.2);
-    }
-
-    /* Corner pipelines */
-    .pipe.top-left { top: 10px; left: 10px; width: 60px; height: 3px; }
-    .pipe.top-left-vert { top: 10px; left: 10px; width: 3px; height: 60px; }
-
-    .pipe.top-right { top: 10px; right: 10px; width: 60px; height: 3px; }
-    .pipe.top-right-vert { top: 10px; right: 10px; width: 3px; height: 60px; }
-
-    .pipe.bottom-left { bottom: 10px; left: 10px; width: 60px; height: 3px; }
-    .pipe.bottom-left-vert { bottom: 10px; left: 10px; width: 3px; height: 60px; }
-
-    .pipe.bottom-right { bottom: 10px; right: 10px; width: 60px; height: 3px; }
-    .pipe.bottom-right-vert { bottom: 10px; right: 10px; width: 3px; height: 60px; }
-
-    /* Square nodes (rounded edges) */
-    .node {
-      position: absolute;
-      width: 14px;
-      height: 14px;
-      border-radius: 4px;
-      background: rgba(255, 255, 255, 0.85);
-      box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
-    }
-
-    .node.tl { top: 65px; left: 65px; }
-    .node.tr { top: 65px; right: 65px; }
-    .node.bl { bottom: 65px; left: 65px; }
-    .node.br { bottom: 65px; right: 65px; }
-
-    header h1, header p {
-      position: relative;
-      z-index: 1;
-    }
-
-    /* ========= PANELS ========= */
     .panel {
       background: rgba(20, 20, 20, 0.95);
       border: 1px solid #2a2a2a;
-      box-shadow: 0 0 20px rgba(255, 0, 0, 0.05);
       padding: 1.5rem;
       transition: all 0.25s ease;
+      border-radius: 4px;
     }
 
     .panel:hover {
       border-color: #ff2a2a;
-      box-shadow: 0 0 25px rgba(255, 42, 42, 0.25);
-      transform: translateY(-3px);
+      box-shadow: 0 0 25px rgba(255, 42, 42, 0.2);
     }
 
     input {
@@ -144,13 +127,7 @@
       color: #e5e5e5;
       padding: 0.9rem 1rem;
       width: 100%;
-      transition: all 0.3s;
-    }
-
-    input:focus {
-      outline: none;
-      border-color: #ff2a2a;
-      box-shadow: 0 0 10px rgba(255, 42, 42, 0.3);
+      border-radius: 4px;
     }
 
     button {
@@ -158,33 +135,12 @@
       color: #fff;
       font-weight: 600;
       padding: 0.9rem 1.5rem;
-      transition: all 0.3s ease;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      box-shadow: 0 0 15px rgba(255, 0, 0, 0.4);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: 0.3s;
     }
 
-    button:hover {
-      transform: scale(1.05);
-      box-shadow: 0 0 20px rgba(255, 51, 102, 0.7);
-    }
-
-    h2, h3 {
-      font-family: 'Montserrat', sans-serif;
-      font-weight: 700;
-      color: #ffffff;
-    }
-
-    h2 {
-      border-left: 4px solid #ff2a2a;
-      padding-left: 0.75rem;
-      margin-bottom: 1rem;
-    }
-
-    h3 {
-      color: #ff6666;
-      margin-bottom: 0.5rem;
-    }
+    h2 { border-left: 4px solid #ff2a2a; padding-left: 0.75rem; }
 
     .spinner {
       border: 4px solid #333;
@@ -196,124 +152,84 @@
     }
 
     @keyframes spin { to { transform: rotate(360deg); } }
-
-    footer {
-      color: #666;
-      text-align: center;
-      padding: 2rem 0;
-      font-size: 0.875rem;
-      border-top: 1px solid #222;
-      margin-top: 3rem;
-    }
-
-    .fade-in { animation: fadeIn 0.6s ease-in-out forwards; }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(15px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
   </style>
 </head>
 
 <body class="p-6">
 
-  <!-- BACKGROUND -->
   <div class="ai-bg">
     <div class="ai-lines"></div>
     <div class="glow-line"></div>
   </div>
 
-  <!-- HEADER -->
   <header>
-    <div class="corner-design">
-      <div class="pipe top-left"></div>
-      <div class="pipe top-left-vert"></div>
-      <div class="pipe top-right"></div>
-      <div class="pipe top-right-vert"></div>
-      <div class="pipe bottom-left"></div>
-      <div class="pipe bottom-left-vert"></div>
-      <div class="pipe bottom-right"></div>
-      <div class="pipe bottom-right-vert"></div>
-
-      <div class="node tl"></div>
-      <div class="node tr"></div>
-      <div class="node bl"></div>
-      <div class="node br"></div>
-    </div>
-
-    <h1 class="text-5xl font-extrabold mb-2 relative">YouTube Comment Summarizer</h1>
-    <p class="text-lg opacity-90 relative">AI-powered Sentiment & Insights Engine</p>
+    <h1 class="text-4xl md:text-5xl font-extrabold mb-2">YouTube Comment Summarizer</h1>
+    <p class="text-lg opacity-90">AI-powered Sentiment & Insights Engine</p>
   </header>
 
-  <!-- MAIN -->
   <main class="max-w-7xl mx-auto my-12 grid grid-cols-1 lg:grid-cols-3 gap-8">
-    <aside class="panel fade-in">
-      <h2>How It Works</h2>
-      <ol class="list-decimal list-inside space-y-2">
-        <li><strong>Paste</strong> a YouTube video link.</li>
-        <li><strong>Click “Summarize”</strong> to analyze comments.</li>
-        <li>AI detects <strong>sentiments</strong> & <strong>keywords</strong>.</li>
-        <li>generates an <strong>AI summary</strong>.</li>
-      </ol>
-
-      <h2 class="mt-8">What It Does</h2>
-      <ul class="list-disc list-inside space-y-1">
-        <li>Summarizes audience reactions using Groq AI.</li>
-        <li>Visualizes sentiment & keyword insights.</li>
-        <li>Helps creators understand engagement fast.</li>
+    <aside class="panel">
+      <h2 class="text-xl font-bold mb-4">How It Works</h2>
+      <ul class="space-y-4 text-sm text-gray-400">
+        <li><strong class="text-white">1. NLP Distillation:</strong> We extract noun phrases and filter noise using NLTK.</li>
+        <li><strong class="text-white">2. Weighted Ranking:</strong> Comments are ranked based on Likes, Sentiment, and PMI.</li>
+        <li><strong class="text-white">3. Semantic Clustering:</strong> Similar ideas are grouped via Sentence-Transformers.</li>
+        <li><strong class="text-white">4. LLM Synthesis:</strong> Groq (Llama 3) generates the final executive summary.</li>
       </ul>
     </aside>
 
-    <section class="panel fade-in lg:col-span-2">
-      <div class="flex flex-col sm:flex-row gap-4 mb-6">
+    <section class="lg:col-span-2 space-y-8">
+      <div class="panel flex flex-col sm:flex-row gap-4">
         <input type="text" id="videoUrl" placeholder="Paste YouTube video link..." />
         <button id="summarizeBtn">Summarize</button>
       </div>
 
-      <div id="loading" class="hidden flex flex-col items-center justify-center py-12 fade-in">
+      <div id="loading" class="hidden flex flex-col items-center justify-center py-12">
         <div class="spinner"></div>
-        <p class="mt-4 text-gray-400 text-lg font-medium">Analyzing comments with AI...</p>
+        <p class="mt-4 text-gray-400">Processing comments through the AI Pipeline...</p>
       </div>
 
-      <div id="error" class="hidden bg-red-100 text-red-700 p-4 rounded-lg text-center font-medium fade-in"></div>
+      <div id="error" class="hidden bg-red-900/50 border border-red-500 text-red-200 p-4 rounded text-center"></div>
 
-      <div id="results" class="hidden fade-in">
-        <h2 id="videoTitle" class="text-3xl font-bold text-gray-100 mb-6 text-center"></h2>
+      <div id="results" class="hidden space-y-8">
+        <h2 id="videoTitle" class="text-3xl font-bold text-white mb-6"></h2>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div class="panel">
-            <h3>Rule-based Summary</h3>
-            <p id="ruleBasedSummary" class="text-gray-300 leading-relaxed"></p>
+            <h3 class="text-pink-500 font-bold mb-3 uppercase tracking-wider text-sm">Theme-Based Insight</h3>
+            <p id="ruleBasedSummary" class="text-gray-300 italic"></p>
           </div>
 
           <div class="panel">
-            <h3>Smart AI Summary</h3>
-            <p id="geminiSummary" class="text-gray-300 leading-relaxed"></p>
+            <h3 class="text-pink-500 font-bold mb-3 uppercase tracking-wider text-sm">Groq AI Executive Summary</h3>
+            <div id="geminiSummary" class="prose-ai"></div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="panel">
+            <h3 class="mb-4 font-bold">Sentiment Pulse</h3>
+            <canvas id="sentimentChart"></canvas>
+          </div>
+          <div class="panel">
+            <h3 class="mb-4 font-bold">Top Keyword Weights</h3>
+            <canvas id="keywordChart"></canvas>
           </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-          <div class="panel fade-in">
-            <h3>Sentiment Distribution</h3>
-            <canvas id="sentimentChart" height="120"></canvas>
-          </div>
-          <div class="panel fade-in">
-            <h3>Top Keywords</h3>
-            <canvas id="keywordChart" height="120"></canvas>
-          </div>
-        </div>
-
-        <div class="panel fade-in">
-          <h3>Weighted Phrases</h3>
-          <ul id="phraseList" class="list-disc list-inside text-gray-300 space-y-2 mb-6"></ul>
-          <canvas id="phraseChart" height="120"></canvas>
+        <div class="panel">
+          <h3 class="mb-4 font-bold text-xl text-red-400">Deep-Dive Phrases (Weighted)</h3>
+          <ul id="phraseList" class="space-y-2 mb-6 text-sm"></ul>
+          <canvas id="phraseChart" height="100"></canvas>
         </div>
       </div>
     </section>
   </main>
 
-  <footer>© 2025 YouTube Summarizer — Powered by AI</footer>
+  <footer class="text-gray-600 text-center py-10 text-xs border-t border-gray-900 mt-10">
+    Built with Flask, Groq, and Sentence-Transformers | 2026
+  </footer>
 
-  <!-- SCRIPT (unchanged functionality) -->
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const summarizeBtn = document.getElementById('summarizeBtn');
@@ -321,13 +237,15 @@
       const loadingDiv = document.getElementById('loading');
       const resultsDiv = document.getElementById('results');
       const errorDiv = document.getElementById('error');
+      
+      // Update this URL to your deployed backend
       const backendUrl = 'https://ehtishaam2005-yt-summarizer-v2.hf.space/summarize';
 
-      let sentimentChart, keywordChart, phraseChart;
+      let charts = {};
 
       summarizeBtn.addEventListener('click', async () => {
         const videoUrl = videoUrlInput.value.trim();
-        if (!videoUrl) return displayError('Please enter a YouTube video URL.');
+        if (!videoUrl) return showError('Please enter a YouTube video URL.');
 
         loadingDiv.classList.remove('hidden');
         resultsDiv.classList.add('hidden');
@@ -344,108 +262,83 @@
           loadingDiv.classList.add('hidden');
 
           if (response.ok) displayResults(data);
-          else displayError(data.error || 'An unknown error occurred.');
+          else showError(data.error || 'Server error.');
         } catch (e) {
-          console.error('Fetch error:', e);
           loadingDiv.classList.add('hidden');
-          displayError('⚠️ Cannot connect to backend. Make sure Flask is running.');
+          showError('Cannot connect to the AI engine.');
         }
       });
 
       function displayResults(data) {
         document.getElementById('videoTitle').textContent = data.video_title;
-        document.getElementById('ruleBasedSummary').innerHTML = data.rule_based_summary;
+        document.getElementById('ruleBasedSummary').textContent = data.rule_based_summary;
 
         const summaryContainer = document.getElementById('geminiSummary');
-        summaryContainer.innerHTML = data.gemini_summary_short || "No concise summary available.";
-        summaryContainer.dataset.short = data.gemini_summary_short || "";
-        summaryContainer.dataset.full = data.gemini_summary_full || "";
+        
+        // Use Marked.js to parse the Markdown from the LLM
+        const shortHTML = marked.parse(data.gemini_summary_short || "");
+        const fullHTML = marked.parse(data.gemini_summary_full || "");
 
-        const existingBtn = document.getElementById('toggleSummaryBtn');
-        if (!existingBtn) {
-          const btn = document.createElement('button');
+        summaryContainer.innerHTML = shortHTML;
+        summaryContainer.dataset.short = shortHTML;
+        summaryContainer.dataset.full = fullHTML;
+
+        // Reset or Create Toggle Button
+        let btn = document.getElementById('toggleSummaryBtn');
+        if (!btn) {
+          btn = document.createElement('button');
           btn.id = 'toggleSummaryBtn';
-          btn.textContent = 'View Full Report';
-          btn.className = 'mt-4 bg-gradient-to-r from-red-600 to-pink-600 text-white py-2 px-4 font-semibold uppercase tracking-wide';
-          btn.addEventListener('click', toggleSummary);
+          btn.className = 'mt-4 text-xs font-bold border border-pink-500 text-pink-500 px-3 py-1 hover:bg-pink-500 hover:text-white transition';
+          btn.addEventListener('click', () => {
+            const isShowingShort = summaryContainer.innerHTML === summaryContainer.dataset.short;
+            summaryContainer.innerHTML = isShowingShort ? summaryContainer.dataset.full : summaryContainer.dataset.short;
+            btn.textContent = isShowingShort ? 'SHOW CONCISE' : 'SHOW FULL REPORT';
+          });
           summaryContainer.parentNode.appendChild(btn);
         }
+        btn.textContent = 'SHOW FULL REPORT';
 
         resultsDiv.classList.remove('hidden');
 
-        if (data.sentiment_data) renderSentimentChart(data.sentiment_data);
-        if (data.top_keywords) renderKeywordChart(data.top_keywords);
-        if (data.top_keywords) renderWeightedPhrases(data.top_keywords);
+        renderCharts(data);
       }
 
-      function toggleSummary() {
-        const summaryContainer = document.getElementById('geminiSummary');
-        const btn = document.getElementById('toggleSummaryBtn');
-        const isShort = summaryContainer.innerHTML.trim() === summaryContainer.dataset.short.trim();
-        if (isShort) {
-          summaryContainer.innerHTML = summaryContainer.dataset.full;
-          btn.textContent = 'View Concise Summary';
-        } else {
-          summaryContainer.innerHTML = summaryContainer.dataset.short;
-          btn.textContent = 'View Full Report';
-        }
-      }
+      function renderCharts(data) {
+        // Clear previous charts
+        Object.values(charts).forEach(chart => chart.destroy());
 
-      function renderSentimentChart(sentimentData) {
-        const ctx = document.getElementById('sentimentChart').getContext('2d');
-        if (sentimentChart) sentimentChart.destroy();
-        sentimentChart = new Chart(ctx, {
+        // Sentiment Chart
+        charts.sentiment = new Chart(document.getElementById('sentimentChart'), {
           type: 'doughnut',
           data: {
-            labels: Object.keys(sentimentData),
-            datasets: [{ data: Object.values(sentimentData), backgroundColor: ['#16a34a', '#eab308', '#dc2626'] }],
+            labels: Object.keys(data.sentiment_data),
+            datasets: [{ data: Object.values(data.sentiment_data), backgroundColor: ['#10b981', '#f59e0b', '#ef4444'] }]
           },
-          options: { cutout: '70%', plugins: { legend: { position: 'bottom', labels: { color: '#ccc' } } } },
+          options: { plugins: { legend: { position: 'bottom', labels: { color: '#aaa' } } } }
         });
-      }
 
-      function renderKeywordChart(keywordData) {
-        const ctx = document.getElementById('keywordChart').getContext('2d');
-        if (keywordChart) keywordChart.destroy();
-        const labels = Object.keys(keywordData);
-        const weights = labels.map(k => (typeof keywordData[k] === 'object' ? keywordData[k].score : keywordData[k]));
-        keywordChart = new Chart(ctx, {
+        // Keyword/Phrase Chart
+        const labels = Object.keys(data.top_keywords);
+        const values = labels.map(k => (data.top_keywords[k].score * 100).toFixed(1));
+
+        charts.keywords = new Chart(document.getElementById('keywordChart'), {
           type: 'bar',
-          data: { labels, datasets: [{ label: 'Keyword Weight', data: weights, backgroundColor: '#ef4444' }] },
-          options: {
-            scales: { x: { ticks: { color: '#aaa' } }, y: { beginAtZero: true, ticks: { color: '#aaa' } } },
-            plugins: { legend: { display: false } },
-          },
+          data: { labels, datasets: [{ label: 'Influence %', data: values, backgroundColor: '#ff3366' }] },
+          options: { scales: { y: { beginAtZero: true, ticks: { color: '#666' } }, x: { ticks: { color: '#666' } } } }
         });
-      }
 
-      function renderWeightedPhrases(phrases) {
+        // Populate Phrase List
         const list = document.getElementById('phraseList');
         list.innerHTML = '';
-        Object.entries(phrases).forEach(([phrase, data]) => {
-          const weight = (typeof data === 'object' ? data.score : data) || 0;
-          const members = data.members ? `<span class="text-gray-500 text-sm">(includes: ${data.members.join(', ')})</span>` : '';
-          const li = document.createElement('li');
-          li.innerHTML = `<strong>${phrase}</strong> — ${(weight * 100).toFixed(2)}% ${members}`;
-          list.appendChild(li);
-        });
-
-        const ctx = document.getElementById('phraseChart').getContext('2d');
-        if (phraseChart) phraseChart.destroy();
-        const labels = Object.keys(phrases);
-        const weights = labels.map(k => (typeof phrases[k] === 'object' ? phrases[k].score : phrases[k]));
-        phraseChart = new Chart(ctx, {
-          type: 'bar',
-          data: { labels, datasets: [{ data: weights, backgroundColor: '#f43f5e' }] },
-          options: {
-            scales: { x: { ticks: { color: '#aaa' } }, y: { beginAtZero: true, ticks: { color: '#aaa' } } },
-            plugins: { legend: { display: false } },
-          },
+        labels.forEach((p, idx) => {
+            const li = document.createElement('li');
+            li.innerHTML = `<span class="text-pink-500 font-bold">${values[idx]}%</span> — <span class="text-white">${p}</span>`;
+            list.appendChild(li);
         });
       }
 
-      function displayError(message) {
-        errorDiv.textContent = message;
+      function showError(msg) {
+        errorDiv.textContent = msg;
         errorDiv.classList.remove('hidden');
       }
     });
