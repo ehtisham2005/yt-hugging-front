@@ -292,7 +292,7 @@
           btn.addEventListener('click', () => {
             const isShowingShort = summaryContainer.innerHTML === summaryContainer.dataset.short;
             summaryContainer.innerHTML = isShowingShort ? summaryContainer.dataset.full : summaryContainer.dataset.short;
-            btn.textContent = isShowingShort ? 'SHOW CONCISE' : 'SHOW FULL REPORT';
+            btn.textContent = isShowingShort ? 'SHOW FULL REPORT' : 'SHOW CONCISE REPORT';
           });
           summaryContainer.parentNode.appendChild(btn);
         }
